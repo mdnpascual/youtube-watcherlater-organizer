@@ -1,5 +1,5 @@
 // Client ID and API key from the Developer Console
-var CLIENT_ID = '923364763636-b204957bn9vj5912fb3am39rlm1ccbk4.apps.googleusercontent.com';
+var CLIENT_ID = 'CLIENT_ID';
 
 // Array of API discovery doc URLs for APIs used by the quickstart
 var DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest"];
@@ -15,7 +15,7 @@ var signoutButton = document.getElementById('signout-button');
 *  On load, called to load the auth2 library and API client library.
 */
 function handleClientLoad() {
-  gapi.load('client:auth2', initClient);
+	gapi.load('client:auth2', initClient);
 }
 
 /**
@@ -23,19 +23,24 @@ function handleClientLoad() {
 *  listeners.
 */
 function initClient() {
-  gapi.client.init({
-    discoveryDocs: DISCOVERY_DOCS,
-    clientId: CLIENT_ID,
-    scope: SCOPES
-  }).then(function () {
-    // Listen for sign-in state changes.
-    gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
-    
-    // Handle the initial sign-in state.
-    updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
-    authorizeButton.onclick = handleAuthClick;
-    signoutButton.onclick = handleSignoutClick;
-  });
+
+	gapi.client.init({
+
+		discoveryDocs: DISCOVERY_DOCS,
+		clientId: CLIENT_ID,
+		scope: SCOPES
+
+	}).then(function () {
+
+		// Listen for sign-in state changes.
+		gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
+		
+		// Handle the initial sign-in state.
+		updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
+		authorizeButton.onclick = handleAuthClick;
+		signoutButton.onclick = handleSignoutClick;
+
+	});
 }
 
 /**
@@ -43,28 +48,38 @@ function initClient() {
 *  appropriately. After a sign-in, the API is called.
 */
 function updateSigninStatus(isSignedIn) {
-  if (isSignedIn) {
-    authorizeButton.style.display = 'none';
-    signoutButton.style.display = 'block';
-    getChannel();
-  } else {
-    authorizeButton.style.display = 'block';
-    signoutButton.style.display = 'none';
-  }
+
+	if (isSignedIn) {
+
+		authorizeButton.style.display = 'none';
+		signoutButton.style.display = 'block';
+		getChannel();
+		getUserPlayList();
+
+	} else {
+
+		authorizeButton.style.display = 'block';
+		signoutButton.style.display = 'none';
+
+	}
 }
 
 /**
 *  Sign in the user upon button click.
 */
 function handleAuthClick(event) {
-  gapi.auth2.getAuthInstance().signIn();
+
+	gapi.auth2.getAuthInstance().signIn();
+
 }
 
 /**
 *  Sign out the user upon button click.
 */
 function handleSignoutClick(event) {
-  gapi.auth2.getAuthInstance().signOut();
+
+	gapi.auth2.getAuthInstance().signOut();
+
 }
 
 /**
@@ -74,22 +89,73 @@ function handleSignoutClick(event) {
 * @param {string} message Text to be placed in pre element.
 */
 function appendPre(message) {
-  var pre = document.getElementById('content');
-  var textContent = document.createTextNode(message + '\n');
-  pre.appendChild(textContent);
+
+	var pre = document.getElementById('content');
+	var textContent = document.createTextNode(message + '\n');
+	pre.appendChild(textContent);
+
 }
 
 /**
 * Print files.
 */
 function getChannel() {
-  gapi.client.youtube.channels.list({
-    'part': 'snippet,contentDetails,statistics',
-    'mine': 'true'
-  }).then(function(response) {
-    var channel = response.result.items[0];
-    appendPre('This channel\'s ID is ' + channel.id + '. ' +
-    'Its title is \'' + channel.snippet.title + ', ' +
-    'and it has ' + channel.statistics.viewCount + ' views.');
-  });
+
+	gapi.client.youtube.channels.list({
+		
+		'part': 'snippet,contentDetails,statistics',
+		'mine': 'true'
+
+	}).then(function(response) {
+
+		var channel = response.result.items[0];
+		appendPre('This channel\'s ID is ' + channel.id + '. ' +
+		'Its title is \'' + channel.snippet.title + ', ' +
+		'and it has ' + channel.statistics.viewCount + ' views.');
+
+	});
+
+}
+
+/**
+* GET USER PLAYLIST
+*/
+function getUserPlayList(){
+
+	gapi.client.youtube.playlists.list({
+
+		'part': 'snippet,contentDetails',
+		'mine': 'true'
+
+	}).then(function(response) {
+
+		var playlists = response.result.items;
+		var watchlater = 'ERROR';
+
+		for (var i = 0; i < response.result.items.length; i++){
+			// TODO
+		}
+
+	});
+
+}
+
+/**
+* GET VIDEOS ON USER PLAYLIST
+*/
+function getUserPlayList(){
+
+	gapi.client.youtube.playlists.list({
+
+		'part': 'snippet,contentDetails',
+		'mine': 'true'
+
+	}).then(function(response) {
+
+		output = response;
+		console.table(response);
+		console.log(response);
+
+	});
+
 }
