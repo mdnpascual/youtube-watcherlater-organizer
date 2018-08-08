@@ -125,7 +125,8 @@ function getUserPlayList(){
 	gapi.client.youtube.playlists.list({
 
 		'part': 'snippet,contentDetails',
-		'mine': 'true'
+		'maxResults': '50',
+		'mine': 'true',
 
 	}).then(function(response) {
 
@@ -133,7 +134,23 @@ function getUserPlayList(){
 		var watchlater = 'ERROR';
 
 		for (var i = 0; i < response.result.items.length; i++){
-			// TODO
+			
+			// TODO: CHANGE THIS TO 'watchlater_public' next time
+			if (response.result.items[i].snippet.title == 'Favorites'){
+
+				watchlater = response.result.items[i];
+				break;
+
+			}
+
+		}
+
+		// CHECK OF WATCHLATER IS SET
+		if (watchlater != 'ERROR'){
+
+			// CALL
+			getVideosOnPlayList(watchlater);
+
 		}
 
 	});
@@ -143,19 +160,179 @@ function getUserPlayList(){
 /**
 * GET VIDEOS ON USER PLAYLIST
 */
-function getUserPlayList(){
+function getVideosOnPlayList(playlistObject){
 
-	gapi.client.youtube.playlists.list({
+	videoCount = playlistObject.contentDetails.itemCount;
+	items = [];
+	pageToken = '';
+
+	output2 = playlistObject;
+
+	// DO SYNCHRONOUS LOOP HERE
+	looper(playlistObject.id, '', 0, Math.ceil(videoCount / 50), items);
+
+}
+
+// FUCK YOU ASYNC LOOP. GET RECURSED INSTEAD
+function looper(playlistObjectId, pageToken, i, end, arrayToFill){
+
+	if (i == end){
+		Vue.set(vueOrganizer, 'items', arrayToFill);
+		console.table(arrayToFill);
+		return arrayToFill;
+	}
+		
+
+	gapi.client.youtube.playlistItems.list({
 
 		'part': 'snippet,contentDetails',
-		'mine': 'true'
+		'maxResults': '50',
+		'playlistId': playlistObjectId,
+		'pageToken': pageToken
 
 	}).then(function(response) {
 
-		output = response;
-		console.table(response);
-		console.log(response);
+		arrayToFill.push(...response.result.items);
+		return looper(playlistObjectId, response.result.nextPageToken, i+1, end, arrayToFill);
 
 	});
 
 }
+
+// IMAGE BOX COMPONENT
+Vue.component('image-box', {
+
+	template:
+	`
+	<div class="image-boxes">
+
+		<!-- EXTRAS -->
+
+		<!-- OVERLAY BUTTONS -->
+
+		<a :href="link">{{title}} </a>
+		<!-- IMAGE -->
+		<img 
+			:id="id"
+			:src="imgsrc"
+			:alt="imgalt"
+			v-on:click="selectImage()"
+			@mouseover="mouseInside()" @mouseleave="mouseOutside()"
+		/>
+
+
+	</div>
+	`,
+
+	data(){
+		return{
+			hovered: false,
+			imgsrc: '',
+			imgalt: '',
+			title: '',
+			link: '',
+			id: ''
+		}
+	},
+
+	mounted(){
+
+		if (['Private video', 'Deleted video'].indexOf(this.video.snippet.title) < 0){
+
+			this.imgsrc = (typeof this.video.snippet.thumbnails.maxres != 'undefined') ? this.video.snippet.thumbnails.maxres.url
+						: (typeof this.video.snippet.thumbnails.standard != 'undefined') ? this.video.snippet.thumbnails.standard.url
+						: (typeof this.video.snippet.thumbnails.high != 'undefined') ? this.video.snippet.thumbnails.high.url
+						: (typeof this.video.snippet.thumbnails.medium != 'undefined') ? this.video.snippet.thumbnails.medium.url
+						: (typeof this.video.snippet.thumbnails.default != 'undefined') ? this.video.snippet.thumbnails.default.url
+						: 'https://s.ytimg.com/yts/img/no_thumbnail-vfl4t3-4R.jpg';
+
+		}else{
+
+			this.imgsrc = 'https://s.ytimg.com/yts/img/no_thumbnail-vfl4t3-4R.jpg';
+
+		}
+
+		this.imgalt = this.video.snippet.description;
+		this.title = this.video.snippet.title;
+		this.link = 'https://www.youtube.com/watch?v=' + this.video.snippet.resourceId.videoId;
+		this.id = 'list';
+
+	},
+
+	props:{
+		
+		video:{
+			
+			required: true,
+			
+		},
+		
+		isSelected:{
+			
+			default: false
+			
+		},
+
+	},
+
+	methods:{
+
+		selectImage(){
+			
+			// EMIT
+			this.$emit('toggleImage', this.video);
+
+		},
+
+		mouseInside(){
+
+			this.hovered = true;
+
+		},
+
+		mouseOutside(){
+
+			this.hovered = false;
+
+		},
+
+	}
+
+})
+
+// TODO: VUE
+vueOrganizer = new Vue({
+	el: '#Organizer',
+
+	data: {
+	  items: [],
+	  selectedVideos: []
+	},
+
+	template:
+	`
+	<div class="videoLibrary-video-container">
+		<image-box
+			v-for="video in items"
+			:key="video.contentDetails.id"
+			:video="video"
+			@toggleImage="toggleImage($event)">
+		</image-box>
+	</div>
+	`,
+
+	methods: {
+
+		toggleImage(imageId){
+			
+			// GET INDEX
+			index = this.selectedVideos.findIndex(function(elem){return elem.contentDetails.id == imageId.contentDetails.id;});
+			
+			// ADD OR REPLACE
+			index === -1 ? this.selectedVideos.push(imageId) : this.selectedVideos.splice(index,1);
+			
+		},
+
+	}
+})
+
